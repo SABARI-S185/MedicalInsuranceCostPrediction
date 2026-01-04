@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Cost Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Insurance Cost Prediction</h1>
+            <p class="subtitle">Predict your annual insurance premium using Machine Learning</p>
+        </header>
+
+        <nav>
+            <a href="/">Prediction</a>
+            <a href="/analysis">Analysis Dashboard</a>
+        </nav>
+
+        <main>
+            <div class="form-container">
+                <h2>Enter Your Information</h2>
+                
+                {% if error %}
+                <div class="error-message">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+                {% endif %}
+                
+                {% if errors %}
+                <div class="error-message">
+                    <strong>Validation Errors:</strong>
+                    <ul>
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <form id="predictionForm" method="POST" action="/predict">
+                    <div class="form-group">
+                        <label for="age">Age <span class="required">*</span></label>
+                        <input type="number" id="age" name="age" min="18" max="100" required
+                               value="{{ form_data.age if form_data else '' }}">
+                        <small>Range: 18-100 years</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">Sex <span class="required">*</span></label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select...</option>
+                            <option value="male" {% if form_data and form_data.sex == 'male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if form_data and form_data.sex == 'female' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bmi">BMI (Body Mass Index) <span class="required">*</span></label>
+                        <input type="number" id="bmi" name="bmi" step="0.1" min="15" max="50" required
+                               value="{{ form_data.bmi if form_data else '' }}">
+                        <small>Normal range: 18.5-24.9 | Range: 15.0-50.0</small>
+                        <div class="bmi-calculator">
+                            <button type="button" id="bmiCalculatorBtn" class="btn-secondary">Calculate BMI</button>
+                            <div id="bmiCalculator" style="display: none; margin-top: 10px;">
+                                <input type="number" id="height" placeholder="Height (cm)" step="0.1">
+                                <input type="number" id="weight" placeholder="Weight (kg)" step="0.1">
+                                <button type="button" id="calculateBmi" class="btn-secondary">Calculate</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="children">Number of Children <span class="required">*</span></label>
+                        <input type="number" id="children" name="children" min="0" max="5" required
+                               value="{{ form_data.children if form_data else '0' }}">
+                        <small>Range: 0-5</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smoker">Smoker <span class="required">*</span></label>
+                        <select id="smoker" name="smoker" required>
+                            <option value="">Select...</option>
+                            <option value="no" {% if form_data and form_data.smoker == 'no' %}selected{% endif %}>No</option>
+                            <option value="yes" {% if form_data and form_data.smoker == 'yes' %}selected{% endif %}>Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="region">Region <span class="required">*</span></label>
+                        <select id="region" name="region" required>
+                            <option value="">Select...</option>
+                            <option value="northeast" {% if form_data and form_data.region == 'northeast' %}selected{% endif %}>Northeast</option>
+                            <option value="northwest" {% if form_data and form_data.region == 'northwest' %}selected{% endif %}>Northwest</option>
+                            <option value="southeast" {% if form_data and form_data.region == 'southeast' %}selected{% endif %}>Southeast</option>
+                            <option value="southwest" {% if form_data and form_data.region == 'southwest' %}selected{% endif %}>Southwest</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn-primary">
+                        <span id="submitText">Predict Insurance Cost</span>
+                        <span id="loadingSpinner" class="spinner" style="display: none;">⏳</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="info-box">
+                <h3>📊 About This Model</h3>
+                <p>This prediction model uses machine learning algorithms trained on insurance data to estimate your annual premium.</p>
+                <p><strong>Key Factors:</strong> Age, BMI, Smoking Status, Children, Region</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Insurance Cost Prediction System | Machine Learning Project</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
+

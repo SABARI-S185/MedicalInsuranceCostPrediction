@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results - Insurance Cost Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Prediction Results</h1>
+        </header>
+
+        <nav>
+            <a href="/">New Prediction</a>
+            <a href="/analysis">Analysis Dashboard</a>
+        </nav>
+
+        <main>
+            <div class="results-container">
+                <!-- Predicted Cost -->
+                <div class="result-card main-result">
+                    <h2>Estimated Annual Premium</h2>
+                    <div class="predicted-cost">
+                        ${{ prediction|currency }}
+                    </div>
+                </div>
+
+                <!-- Cost Breakdown -->
+                <div class="result-card">
+                    <h3>📊 Cost Breakdown</h3>
+                    <div class="breakdown-table">
+                        <div class="breakdown-row">
+                            <span>Base Cost:</span>
+                            <span>${{ breakdown.base|currency }}</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Age Factor ({{ form_data.age }} years):</span>
+                            <span>${{ breakdown.age|currency }}</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>BMI Impact ({{ form_data.bmi }}):</span>
+                            <span>${{ breakdown.bmi|currency }}</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Smoking Status ({{ form_data.smoker|title }}):</span>
+                            <span class="{% if breakdown.smoker > 0 %}highlight{% endif %}">${{ breakdown.smoker|currency }}</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Children ({{ form_data.children }}):</span>
+                            <span>${{ breakdown.children|currency }}</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Region ({{ form_data.region|title }}):</span>
+                            <span>${{ breakdown.region|currency }}</span>
+                        </div>
+                        <div class="breakdown-row total">
+                            <span><strong>Total Predicted:</strong></span>
+                            <span><strong>${{ prediction|currency }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="result-card">
+                    <h3>📈 Comparison</h3>
+                    <canvas id="comparisonChart"></canvas>
+                    <div class="comparison-text">
+                        {% set percentage_diff = ((prediction - avg_cost) / avg_cost * 100) %}
+                        <p>Your premium is <strong>{{ "%.1f"|format(percentage_diff) }}%</strong> 
+                        {% if percentage_diff > 0 %}
+                            higher
+                        {% else %}
+                            lower
+                        {% endif %}
+                        than the average (${{ avg_cost|currency }})</p>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                {% if insights %}
+                <div class="result-card">
+                    <h3>💡 Key Insights</h3>
+                    <ul class="insights-list">
+                        {% for insight in insights %}
+                        <li>{{ insight }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <div class="savings-tips">
+                        <h4>💡 Potential Savings:</h4>
+                        <ul>
+                            {% if form_data.smoker == 'yes' %}
+                            <li>Quit smoking: Save approximately $5,000-$20,000/year</li>
+                            {% endif %}
+                            {% if form_data.bmi|float > 25 %}
+                            <li>Reduce BMI to normal range (18.5-24.9): Save approximately $500-$1,500/year</li>
+                            {% endif %}
+                            {% if form_data.bmi|float < 18.5 %}
+                            <li>Maintain healthy BMI: Can help optimize your premium</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Input Summary -->
+                <div class="result-card">
+                    <h3>📋 Your Input Summary</h3>
+                    <div class="input-summary">
+                        <div class="summary-item">
+                            <span>Age:</span>
+                            <span>{{ form_data.age }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Sex:</span>
+                            <span>{{ form_data.sex|title }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>BMI:</span>
+                            <span>{{ form_data.bmi }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Children:</span>
+                            <span>{{ form_data.children }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Smoker:</span>
+                            <span>{{ form_data.smoker|title }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Region:</span>
+                            <span>{{ form_data.region|title }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Info -->
+                {% if metadata %}
+                <div class="result-card info-card">
+                    <h3>🤖 Model Information</h3>
+                    <p><strong>Model Type:</strong> {{ metadata.model_type }}</p>
+                    <p><strong>R² Score:</strong> {{ "%.4f"|format(metadata.r2_score) }}</p>
+                    <p><strong>RMSE:</strong> ${{ metadata.rmse|currency }}</p>
+                    <p><strong>Training Date:</strong> {{ metadata.training_date }}</p>
+                </div>
+                {% endif %}
+
+                <div class="action-buttons">
+                    <a href="/" class="btn-primary">Make Another Prediction</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Insurance Cost Prediction System | Machine Learning Project</p>
+        </footer>
+    </div>
+
+    <script>
+        // Comparison Chart
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        const predictedCost = {{ prediction }};
+        const avgCost = {{ avg_cost }};
+        const nonSmokerAvg = avgCost * 0.6; // Approximate average for non-smokers
+        const ageGroupAvg = avgCost * 1.1; // Approximate average for age group
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Your Prediction', 'Dataset Average', 'Non-Smoker Average', 'Age Group Average'],
+                datasets: [{
+                    label: 'Annual Premium ($)',
+                    data: [
+                        predictedCost,
+                        avgCost,
+                        nonSmokerAvg,
+                        ageGroupAvg
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(255, 206, 86, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
